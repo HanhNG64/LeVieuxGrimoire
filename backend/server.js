@@ -15,7 +15,7 @@ const normalizePort = (val) => {
 };
 
 // The listening port
-const port = normalizePort(process.env.PORT || '3000');
+const port = normalizePort(process.env.PORT || '4000');
 
 // Create an HTTP server using the Express application.
 app.set('port', port);
