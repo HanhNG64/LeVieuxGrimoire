@@ -1,6 +1,7 @@
-const book = require('../models/book');
 const Book = require('../models/book');
 const fs = require('fs');
+const path = require('path');
+const sharp = require('sharp');
 
 /**
  * Add a new book to the database
@@ -8,7 +9,7 @@ const fs = require('fs');
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.addBook = (req, res, next) => {
+exports.addBook = async (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
 
   // Remove false IDs
