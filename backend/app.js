@@ -3,15 +3,11 @@ const bookRoute = require('./routes/book.js');
 const userRoute = require('./routes/user.js');
 const mongoose = require('mongoose');
 const path = require('path');
+const connectDB = require('./config/db');
+const dotenv = require('dotenv');
+dotenv.config();
 
-// Connection to the database
-mongoose
-  .connect('mongodb+srv://hanh:hanh64@cluster0.vva8503.mongodb.net/test?retryWrites=true&w=majority', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch(() => console.log('Connexion à MongoDB échouée !'));
+connectDB();
 
 // Allow the Express application to process JSON data from requests
 const app = express();

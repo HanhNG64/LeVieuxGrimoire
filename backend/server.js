@@ -1,5 +1,5 @@
 const http = require('http');
-const app = require('./app');
+const PORT = '4000';
 
 // To ensure that the port is a positive integer.
 const normalizePort = (val) => {
@@ -15,9 +15,10 @@ const normalizePort = (val) => {
 };
 
 // The listening port
-const port = normalizePort(process.env.PORT || '4000');
+const port = normalizePort(process.env.PORT || PORT);
 
 // Create an HTTP server using the Express application.
+const app = require('./app');
 app.set('port', port);
 const server = http.createServer(app);
 
