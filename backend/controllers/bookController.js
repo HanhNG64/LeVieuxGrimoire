@@ -1,15 +1,13 @@
 const Book = require('../models/book');
 const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp');
 
 /**
- * Add a new book to the database
+ * Acreate and add a new book to the database
  * @param {*} req HTTP request
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.addBook = async (req, res, next) => {
+exports.createBook = async (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
 
   // Remove false IDs
@@ -35,7 +33,7 @@ exports.addBook = async (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.getBooks = (req, res, next) => {
+exports.readBooks = (req, res, next) => {
   Book.find()
     .then((books) => {
       res.status(200).json(books);
@@ -49,7 +47,7 @@ exports.getBooks = (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.getBook = (req, res, next) => {
+exports.readBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => res.status(200).json(book))
     .catch((error) => res.status(404).json({ error }));
@@ -100,12 +98,77 @@ exports.deleteBook = (req, res, next) => {
     .catch((error) => res.status(500).json({ error }));
 };
 
-exports.postBestRating = (req, res, next) => {
-  res.status(200).json({ message: 'postBestRating...' });
+/**
+ * Create and add a new review to a book and update its average rating.
+ * @param {*} req HTTP request
+ * @param {*} res HTTP response
+ * @param {*} next Middleware function to move to the next middleware in the chain
+ * @returns
+ */
+exports.postBestRating = async (req, res, next) => {
+  const bookId = req.params.id;
+  const userId = req.body.userId;
+  const rating = req.body.rating;
+
+  try {
+    if (rating < 1 || rating > 5) {
+      res.status(200).json({ message: 'La note doit être comprise entre 1 et 5' });
+      return;
+    }
+
+    const existingRating = await Book.findOne({ _id: bookId, 'ratings.userId': userId });
+    if (existingRating) {
+      res.status(403).json({ message: 'Not authorized' });
+      return;
+    }
+
+    // Add a new rating to the book
+    const updatedBook = await Book.findByIdAndUpdate(
+      bookId,
+      {
+        $push: {
+          ratings: {
+            userId: userId,
+            grade: rating,
+          },
+        },
+      },
+      { new: true, upsert: true },
+    );
+
+    // Compute the average
+    const match = {
+      $match: { $expr: { $eq: ['$_id', { $toObjectId: bookId }] } },
+    };
+    const unwind = { $unwind: '$ratings' };
+    const group = { $group: { _id: '$_id', averageRating: { $avg: '$ratings.grade' } } };
+    const avg = await Book.aggregate([match, unwind, group]);
+    const roundedAverageRating = avg[0].averageRating.toFixed(1);
+    await Book.findByIdAndUpdate(bookId, { $set: { averageRating: roundedAverageRating } });
+    updatedBook.averageRating = roundedAverageRating;
+
+    res.status(200).json(updatedBook);
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };
 
+/**
+ * Retrieve the top three books based on their average rating
+ * @param {*} req HTTP request
+ * @param {*} res HTTP response
+ * @param {*} next Middleware function to move to the next middleware in the chain
+ */
 exports.getBestRating = (req, res, next) => {
-  res.status(200).json({ message: 'getBestRating...' });
+  Book.find()
+    .then((books) => {
+      // Sort books by averageRating, highest to lowest
+      books.sort((a, b) => b.averageRating - a.averageRating);
+      // Filter the 3 best books
+      let bestBooks = books.filter((book, index) => index < 3);
+      res.status(200).json(bestBooks);
+    })
+    .catch((error) => res.status(400).json({ error }));
 };
 
 /**
