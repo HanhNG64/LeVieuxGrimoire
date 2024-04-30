@@ -1,5 +1,10 @@
 const http = require('http');
 const PORT = '4000';
+const connectDB = require('./config/db');
+const dotenv = require('dotenv').config();
+
+// Connection to DB
+connectDB();
 
 // To ensure that the port is a positive integer.
 const normalizePort = (val) => {

@@ -3,11 +3,6 @@ const bookRoute = require('./routes/book.js');
 const userRoute = require('./routes/user.js');
 const mongoose = require('mongoose');
 const path = require('path');
-const connectDB = require('./config/db');
-const dotenv = require('dotenv');
-dotenv.config();
-
-connectDB();
 
 // Allow the Express application to process JSON data from requests
 const app = express();
