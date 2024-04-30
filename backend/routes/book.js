@@ -10,7 +10,7 @@ router.post('/', auth, multer, sharpResize, bookController.createBook);
 router.get('/', bookController.readBooks);
 router.put('/:id', auth, multer, sharpResize, bookController.modifyBook);
 router.post('/:id/rating', auth, bookController.postBestRating);
-router.get('/bestrating', bookController.getBestRating);
+router.get('/bestrating', bookController.readBestRating);
 router.get('/:id', bookController.readBook);
 router.delete('/:id', auth, bookController.deleteBook);
 

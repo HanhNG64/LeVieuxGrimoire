@@ -159,7 +159,7 @@ exports.postBestRating = async (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.getBestRating = async (req, res, next) => {
+exports.readBestRating = async (req, res, next) => {
   try {
     const topBooks = await Book.find()
       .sort({ averageRating: -1 }) // Sort books in descending order of average rating
