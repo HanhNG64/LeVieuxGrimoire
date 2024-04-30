@@ -159,16 +159,15 @@ exports.postBestRating = async (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.getBestRating = (req, res, next) => {
-  Book.find()
-    .then((books) => {
-      // Sort books by averageRating, highest to lowest
-      books.sort((a, b) => b.averageRating - a.averageRating);
-      // Filter the 3 best books
-      let bestBooks = books.filter((book, index) => index < 3);
-      res.status(200).json(bestBooks);
-    })
-    .catch((error) => res.status(400).json({ error }));
+exports.getBestRating = async (req, res, next) => {
+  try {
+    const topBooks = await Book.find()
+      .sort({ averageRating: -1 }) // Sort books in descending order of average rating
+      .limit(3);
+    res.status(200).json(topBooks);
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };
 
 /**
