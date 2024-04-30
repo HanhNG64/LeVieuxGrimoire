@@ -1,3 +1,4 @@
+const { throws } = require('assert');
 const Book = require('../models/book');
 const fs = require('fs');
 
@@ -17,14 +18,18 @@ exports.createBook = async (req, res, next) => {
   const newBook = new Book({
     ...bookObject,
     userId: req.auth.userId,
+    ratings: [{}],
+    averageRating: 0,
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
   });
 
   // Save the new book to the database
-  newBook
-    .save()
-    .then(() => res.status(201).json({ message: 'Livre enregistré' }))
-    .catch((error) => res.status(400).json({ error }));
+  try {
+    await newBook.save();
+    res.status(201).json({ message: `Le livre ${newBook.title} est enregistré` });
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };
 
 /**
@@ -33,12 +38,13 @@ exports.createBook = async (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.readBooks = (req, res, next) => {
-  Book.find()
-    .then((books) => {
-      res.status(200).json(books);
-    })
-    .catch((error) => res.status(400).json({ error }));
+exports.readBooks = async (req, res, next) => {
+  try {
+    const books = await Book.find();
+    res.status(200).json(books);
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };
 
 /**
@@ -47,10 +53,16 @@ exports.readBooks = (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.readBook = (req, res, next) => {
-  Book.findOne({ _id: req.params.id })
-    .then((book) => res.status(200).json(book))
-    .catch((error) => res.status(404).json({ error }));
+exports.readBook = async (req, res, next) => {
+  try {
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ error: 'Livre non trouvé' });
+    }
+    res.status(200).json(book);
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };
 
 /**
@@ -59,25 +71,31 @@ exports.readBook = (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.modifyBook = (req, res, next) => {
+exports.modifyBook = async (req, res, next) => {
   // Create an object from book data in an HTTP request
   let bookObject = getBookObjectFromRequestHttp(req);
   const bookId = req.params.id;
 
-  Book.findOne({ _id: bookId })
-    .then((book) => {
-      if (isAuthorized(book, req.auth.userId)) {
-        // If a new image is provided in the request, delete the old image from the server before updating the book data
-        if (req.file) {
-          removeFile(getFileFromBook(book), updateBook(bookId, bookObject, res));
-        } else {
-          updateBook(bookId, bookObject, res);
-        }
-      } else {
-        res.status(403).json({ message: '403: unauthorized request' });
-      }
-    })
-    .catch((error) => res.status(400).json({ error }));
+  try {
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ error: 'Livre non trouvé' });
+    }
+
+    if (!isAuthorized(book, req.auth.userId)) {
+      return res.status(403).json({ error: '403: unauthorized request' });
+    }
+
+    // Update book information in database
+    await Book.updateOne({ _id: bookId }, { ...bookObject, _id: bookId });
+    // If a new image is provided in the request, delete the old image from the server before updating the book data
+    if (req.file) {
+      await removeFile(getFileFromBook(book));
+    }
+    res.status(200).json({ message: 'Livre modifié' });
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };
 
 /**
@@ -86,16 +104,23 @@ exports.modifyBook = (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.deleteBook = (req, res, next) => {
-  Book.findOne({ _id: req.params.id })
-    .then((book) => {
-      if (isAuthorized(book, req.auth.userId)) {
-        removeBook(book, res);
-      } else {
-        res.status(401).json({ message: 'Not authorized' });
-      }
-    })
-    .catch((error) => res.status(500).json({ error }));
+exports.deleteBook = async (req, res, next) => {
+  try {
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ error: 'Livre non trouvé' });
+    }
+
+    if (!isAuthorized(book, req.auth.userId)) {
+      return res.status(403).json({ error: '403: unauthorized request' });
+    }
+
+    await removeFile(getFileFromBook(book));
+    await Book.deleteOne({ _id: book._id });
+    res.status(200).json({ message: 'Livre supprimé' });
+  } catch (error) {
+    res.status(500).json({ error });
+  }
 };
 
 /**
@@ -112,14 +137,12 @@ exports.postBestRating = async (req, res, next) => {
 
   try {
     if (rating < 1 || rating > 5) {
-      res.status(200).json({ message: 'La note doit être comprise entre 1 et 5' });
-      return;
+      return res.status(200).json({ message: 'La note doit être comprise entre 1 et 5' });
     }
 
     const existingRating = await Book.findOne({ _id: bookId, 'ratings.userId': userId });
     if (existingRating) {
-      res.status(403).json({ message: 'Not authorized' });
-      return;
+      return res.status(403).json({ message: 'Not authorized' });
     }
 
     // Add a new rating to the book
@@ -181,26 +204,15 @@ function isAuthorized(book, userId) {
 }
 
 /**
- * Remove a book from the database and its associated image from the file system
- * @param {*} book The boook to delete
- * @param {*} res Returns a JSON response with a message
- */
-function removeBook(book, res) {
-  removeFile(getFileFromBook(book), deleteBook(book, res));
-}
-
-/**
  * Delete a file from the file system
  * @param {*} filename The file to remove
- * @param {*} callback The callback function
  */
-function removeFile(filename, callback) {
-  fs.unlink(`images/${filename}`, (error) => {
-    if (error) {
-      console.log(error);
-    } else {
-      callback;
-    }
+function removeFile(filename) {
+  return new Promise((resolve, reject) => {
+    fs.unlink(`images/${filename}`, (error) => {
+      if (error) reject(error);
+      resolve(`${filename} est supptimé`);
+    });
   });
 }
 
@@ -211,29 +223,6 @@ function removeFile(filename, callback) {
  */
 function getFileFromBook(book) {
   return book.imageUrl.split('/images/')[1];
-}
-
-/**
- * Delete a book from the database without deleting the image file from the file system
- * @param {*} book The book to delete
- * @param {*} res Returns a JSON response with a message
- */
-function deleteBook(book, res) {
-  Book.deleteOne({ _id: book._id })
-    .then(() => res.status(200).json({ message: 'Livre supprimé' }))
-    .catch((error) => res.status(401).json({ error }));
-}
-
-/**
- * Update book information in database
- * @param {*} bookId Book id
- * @param {*} bookObject New data
- * @param {*} res Returns a JSON response with a message
- */
-function updateBook(bookId, bookObject, res) {
-  Book.updateOne({ _id: bookId }, { ...bookObject, _id: bookId })
-    .then(() => res.status(200).json({ message: 'Livre modifié' }))
-    .catch((error) => res.status(401).json({ error }));
 }
 
 /**

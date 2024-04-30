@@ -8,24 +8,25 @@ const jwt = require('jsonwebtoken');
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.signup = (req, res, next) => {
-  // Hash user-provided password
-  bcrypt
-    .hash(req.body.password, 10)
-    .then((hash) => {
-      // Create a new user with the email provided by the user and the generated password hash
-      const newUser = new User({
-        email: req.body.email,
-        password: hash,
-      });
+exports.signup = async (req, res, next) => {
+  try {
+    // Hash user-provided password
+    const hash = await bcrypt.hash(req.body.password, 10);
 
-      // Save the new user to the database
-      newUser
-        .save()
-        .then(() => res.status(201).json({ message: 'Utilisateur créé' }))
-        .catch((error) => res.status(400).json({ error }));
-    })
-    .catch((error) => res.status(500).json({ error }));
+    // Create a new user with the email provided by the user and the generated password hash
+    const newUser = new User({
+      email: req.body.email,
+      password: hash,
+    });
+
+    // Save the new user to the database
+    newUser
+      .save()
+      .then(() => res.status(201).json({ message: 'Utilisateur créé' }))
+      .catch((error) => res.status(400).json({ error }));
+  } catch (error) {
+    res.status(500).json({ error });
+  }
 };
 
 /**
@@ -34,34 +35,31 @@ exports.signup = (req, res, next) => {
  * @param {*} res HTTP response
  * @param {*} next Middleware function to move to the next middleware in the chain
  */
-exports.login = (req, res, next) => {
-  User.findOne({ email: req.body.email })
-    .then((user) => {
-      if (user) {
-        //If the password provided by the user is identical to the hashed password stored in the database,
-        // generate a token with a 24-hour deadline
-        bcrypt
-          .compare(req.body.password, user.password)
-          .then((valid) => {
-            if (valid) {
-              res.status(200).json({
-                userId: user._id,
-                token: jwt.sign(
-                  {
-                    userId: user._id,
-                  },
-                  'RANDOM_TOKEN_SECRET',
-                  { expiresIn: '24h' },
-                ),
-              });
-            } else {
-              res.status(401).json({ message: 'Erreur de connexion' });
-            }
-          })
-          .catch((error) => res.status(400).json({ error }));
-      } else {
-        res.status(401).json({ message: 'Erreur de connexion' });
-      }
-    })
-    .catch((error) => res.status(500).json({ error }));
+exports.login = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(401).json({ message: 'Erreur de connexion' });
+    }
+
+    //Check if the password provided by the user is identical to the hashed password stored in the database
+    const valid = await bcrypt.compare(req.body.password, user.password);
+    if (!valid) {
+      return res.status(401).json({ message: 'Erreur de connexion' });
+    }
+
+    // Generate a token with a 24-hour deadline
+    res.status(200).json({
+      userId: user._id,
+      token: jwt.sign(
+        {
+          userId: user._id,
+        },
+        'RANDOM_TOKEN_SECRET',
+        { expiresIn: '24h' },
+      ),
+    });
+  } catch (error) {
+    res.status(500).json({ error });
+  }
 };
