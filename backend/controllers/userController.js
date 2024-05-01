@@ -2,6 +2,7 @@ const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
+const { secretKey } = require('../config/config');
 
 /**
  * Create a new user by hashing their password and saving it in the database
@@ -16,12 +17,9 @@ exports.signup = async (req, res, next) => {
       return res.status(400).json({ error: 'Adresse e-mail invalide' });
     }
     if (!validatePassword(req.body.password)) {
-      return res
-        .status(400)
-        .json({
-          error:
-            'Le mot de passe doit contenir au moins 8 caractères : une lettre minuscule, une lettre majuscule, un chiffre et un carctère spécial',
-        });
+      return res.status(400).json({
+        error: 'Le mot de passe doit contenir au moins 8 caractères : une lettre minuscule, une lettre majuscule, un chiffre et un carctère spécial',
+      });
     }
 
     // Hash user-provided password
@@ -69,7 +67,7 @@ exports.login = async (req, res, next) => {
         {
           userId: user._id,
         },
-        'RANDOM_TOKEN_SECRET',
+        secretKey,
         { expiresIn: '24h' },
       ),
     });
