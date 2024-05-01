@@ -1,12 +1,18 @@
 const express = require('express');
 const bookRoute = require('./routes/book.js');
 const userRoute = require('./routes/user.js');
-const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs');
 
 // Allow the Express application to process JSON data from requests
 const app = express();
 app.use(express.json());
+
+// Create the images directory to store images
+const imagesDir = path.join(__dirname, 'images');
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir);
+}
 
 // Configure CORS headers to allow access to the API from any origin
 app.use((req, res, next) => {
