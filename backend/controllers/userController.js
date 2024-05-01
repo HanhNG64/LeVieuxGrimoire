@@ -1,6 +1,7 @@
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const validator = require('validator');
 
 /**
  * Create a new user by hashing their password and saving it in the database
@@ -10,6 +11,19 @@ const jwt = require('jsonwebtoken');
  */
 exports.signup = async (req, res, next) => {
   try {
+    // Validate email and password
+    if (!validator.isEmail(req.body.email)) {
+      return res.status(400).json({ error: 'Adresse e-mail invalide' });
+    }
+    if (!validatePassword(req.body.password)) {
+      return res
+        .status(400)
+        .json({
+          error:
+            'Le mot de passe doit contenir au moins 8 caractères : une lettre minuscule, une lettre majuscule, un chiffre et un carctère spécial',
+        });
+    }
+
     // Hash user-provided password
     const hash = await bcrypt.hash(req.body.password, 10);
 
@@ -63,3 +77,15 @@ exports.login = async (req, res, next) => {
     res.status(500).json({ error });
   }
 };
+
+/**
+ * Password validation function
+ * @param {*} password
+ * @returns
+ */
+function validatePassword(password) {
+  const isLengthValid = validator.isLength(password, { min: 8 });
+  // At least one lowercase letter, one uppercase letter, one number and one special character
+  const isComplexityValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/.test(password);
+  return isLengthValid && isComplexityValid;
+}
