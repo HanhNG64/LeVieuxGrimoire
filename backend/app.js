@@ -4,27 +4,26 @@ const userRoute = require('./routes/user.js');
 const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
+const cors = require('cors');
 
 // Allow the Express application to process JSON data from requests
 const app = express();
 app.use(express.json());
 
-// Secure HTTP headers against XSS attacks
-app.use(helmet());
-// Enable CORS configuration with Helmet.js and allow cross-origin queries
+// CORS configuration and allow cross-origin queries
+const options = {
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization',
+};
+app.use(cors(options));
+
+// Secure HTTP headers against XSS attacks and allow cross-origin queries
 app.use(
-  helmet.crossOriginResourcePolicy({
-    policy: 'cross-origin',
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   }),
 );
-
-// Configure CORS headers to allow access to the API from any origin
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  next();
-});
 
 // Create the images directory to store images
 const imagesDir = path.join(__dirname, 'images');
