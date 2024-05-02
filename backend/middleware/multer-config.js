@@ -25,19 +25,17 @@ const storage = multer.diskStorage({
 module.exports = multer({ storage: storage, limits: { fileSize: MAX_SIZE } }).single('image');
 
 module.exports.validateImage = (req, res, next) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "Aucune image n'a été téléchargée." });
-  }
+  if (req.file) {
+    const imageFile = req.file;
+    const fileExtension = imageFile.originalname.split('.').pop().toLowerCase();
 
-  const imageFile = req.file;
-  const fileExtension = imageFile.originalname.split('.').pop().toLowerCase();
+    if (!IMG_EXTENSIONS.includes(fileExtension)) {
+      return res.status(400).json({ error: "L'extension du fichier n'est pas valide." });
+    }
 
-  if (!IMG_EXTENSIONS.includes(fileExtension)) {
-    return res.status(400).json({ error: "L'extension du fichier n'est pas valide." });
-  }
-
-  if (!MIME_TYPES[imageFile.mimetype]) {
-    return res.status(400).json({ error: "Le type MIME du fichier n'est pas valide." });
+    if (!MIME_TYPES[imageFile.mimetype]) {
+      return res.status(400).json({ error: "Le type MIME du fichier n'est pas valide." });
+    }
   }
   next();
 };
