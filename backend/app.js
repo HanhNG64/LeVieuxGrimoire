@@ -5,6 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
 const cors = require('cors');
+// const limiter = require('./middleware/limiter.js');
+const rateLimiter = require('express-rate-limit');
 
 // Allow the Express application to process JSON data from requests
 const app = express();
@@ -24,6 +26,16 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   }),
 );
+
+// Rate limiter
+const limiter = rateLimiter({
+  max: 100, // Max requests
+  windowMS: 5 * 60 * 5000, // Time
+  message: 'Réessayer plus tard',
+  standardHeaders: false,
+  legacyHeaders: false,
+});
+app.use(limiter);
 
 // Create the images directory to store images
 const imagesDir = path.join(__dirname, 'images');
