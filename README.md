@@ -10,10 +10,6 @@ Le site Le Vieux Grimoire pemrmet aux membres d’ajouter un nouveau livre et de
     2/ Installer :  `npm install`
     3/ Lancer : `nodemon server`
 
-1/ Se placer dans le dossier backend : cd backend
-2/ Installer les dépencdances avec la commande: npm install
-3/ Lancer le server : nodemon server
-
 ### Front end
 
     1/ Se placer dans le dossier frontend : cd frontend
