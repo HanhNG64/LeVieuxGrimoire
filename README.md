@@ -6,12 +6,17 @@ Le site Le Vieux Grimoire pemrmet aux membres d’ajouter un nouveau livre et de
 
 ### Back end
 
+    1/ Se placer dans le dossier backend : cd backend
+    2/ Installer :  `npm install`
+    3/ Lancer : `nodemon server`
+
 1/ Se placer dans le dossier backend : cd backend
 2/ Installer les dépencdances avec la commande: npm install
 3/ Lancer le server : nodemon server
 
 ### Front end
 
-1/ Se placer dans le dossier frontend : cd frontend
-2/ Installer les dépencdances avec la commande: npm install
-3/ Lancer le projet : npm start
+    1/ Se placer dans le dossier frontend : cd frontend
+    2/ Installer :  `npm install`
+    3/ Lancer : `npm start`
+    4/ Le site est servi localement : http://localhost:3000
