@@ -12,18 +12,24 @@ const { secretKey } = require('../config/config');
  */
 exports.signup = async (req, res, next) => {
   try {
-    // Validate email and password
-    if (!validator.isEmail(req.body.email)) {
-      return res.status(400).json({ error: 'Adresse e-mail invalide' });
+    // Check data from request
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Missing Data' });
     }
-    if (!validatePassword(req.body.password)) {
+
+    // Validate email and password
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ error: 'Bad credential' });
+    }
+    if (!validatePassword(password)) {
       return res.status(400).json({
-        error: 'Le mot de passe doit contenir au moins 8 caractères : une lettre minuscule, une lettre majuscule, un chiffre et un carctère spécial',
+        error: 'Bad credential',
       });
     }
 
     // Hash user-provided password
-    const hash = await bcrypt.hash(req.body.password, 10);
+    const hash = await bcrypt.hash(password, 10);
 
     // Create a new user with the email provided by the user and the generated password hash
     const newUser = new User({
@@ -34,7 +40,7 @@ exports.signup = async (req, res, next) => {
     // Save the new user to the database
     newUser
       .save()
-      .then(() => res.status(201).json({ message: 'Utilisateur créé' }))
+      .then(() => res.status(201).json({ message: 'User created' }))
       .catch((error) => res.status(400).json({ error }));
   } catch (error) {
     res.status(500).json({ error });
@@ -49,15 +55,21 @@ exports.signup = async (req, res, next) => {
  */
 exports.login = async (req, res, next) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
+    // Check data from request
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Missing Data' });
+    }
+
+    const user = await User.findOne({ email: email });
     if (!user) {
-      return res.status(401).json({ message: 'Erreur de connexion' });
+      return res.status(401).json({ message: 'Connexion error' });
     }
 
     //Check if the password provided by the user is identical to the hashed password stored in the database
-    const valid = await bcrypt.compare(req.body.password, user.password);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      return res.status(401).json({ message: 'Erreur de connexion' });
+      return res.status(401).json({ message: 'Connexion error' });
     }
 
     // Generate a token with a 24-hour deadline
@@ -68,7 +80,7 @@ exports.login = async (req, res, next) => {
           userId: user._id,
         },
         secretKey,
-        { expiresIn: '24h' },
+        { expiresIn: process.env.JWT_DURING },
       ),
     });
   } catch (error) {

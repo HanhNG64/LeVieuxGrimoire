@@ -3,6 +3,11 @@ const { secretKey } = require('../config/config');
 
 module.exports = (req, res, next) => {
   try {
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+      return res.status(401).json({ message: 'Missing Token' });
+    }
+
     const token = req.headers.authorization.split(' ')[1];
     const decodedToken = jwt.verify(token, secretKey);
     const userId = decodedToken.userId;

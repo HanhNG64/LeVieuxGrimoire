@@ -26,7 +26,7 @@ exports.createBook = async (req, res, next) => {
   // Save the new book to the database
   try {
     await newBook.save();
-    res.status(201).json({ message: `Le livre ${newBook.title} est enregistré` });
+    res.status(201).json({ message: `${newBook.title} added` });
   } catch (error) {
     res.status(400).json({ error });
   }
@@ -57,7 +57,7 @@ exports.readBook = async (req, res, next) => {
   try {
     const book = await Book.findById(req.params.id);
     if (!book) {
-      return res.status(404).json({ error: 'Livre non trouvé' });
+      return res.status(404).json({ error: 'Book not found' });
     }
     res.status(200).json(book);
   } catch (error) {
@@ -75,11 +75,10 @@ exports.modifyBook = async (req, res, next) => {
   // Create an object from book data in an HTTP request
   let bookObject = getBookObjectFromRequestHttp(req);
   const bookId = req.params.id;
-
   try {
     const book = await Book.findById(req.params.id);
     if (!book) {
-      return res.status(404).json({ error: 'Livre non trouvé' });
+      return res.status(404).json({ error: 'Book not found' });
     }
 
     if (!isAuthorized(book, req.auth.userId)) {
@@ -92,7 +91,7 @@ exports.modifyBook = async (req, res, next) => {
     if (req.file) {
       await removeFile(getFileFromBook(book));
     }
-    res.status(200).json({ message: 'Livre modifié' });
+    res.status(200).json({ message: 'Book updated' });
   } catch (error) {
     res.status(400).json({ error });
   }
@@ -108,7 +107,7 @@ exports.deleteBook = async (req, res, next) => {
   try {
     const book = await Book.findById(req.params.id);
     if (!book) {
-      return res.status(404).json({ error: 'Livre non trouvé' });
+      return res.status(404).json({ error: 'Book not found' });
     }
 
     if (!isAuthorized(book, req.auth.userId)) {
@@ -117,7 +116,7 @@ exports.deleteBook = async (req, res, next) => {
 
     await removeFile(getFileFromBook(book));
     await Book.deleteOne({ _id: book._id });
-    res.status(200).json({ message: 'Livre supprimé' });
+    res.status(200).json({ message: 'Book deleted' });
   } catch (error) {
     res.status(500).json({ error });
   }
@@ -137,7 +136,7 @@ exports.postBestRating = async (req, res, next) => {
 
   try {
     if (rating < 1 || rating > 5) {
-      return res.status(200).json({ message: 'La note doit être comprise entre 1 et 5' });
+      return res.status(200).json({ message: 'The rating must be between 1 and 5' });
     }
 
     const existingRating = await Book.findOne({ _id: bookId, 'ratings.userId': userId });
@@ -211,7 +210,7 @@ function removeFile(filename) {
   return new Promise((resolve, reject) => {
     fs.unlink(`images/${filename}`, (error) => {
       if (error) reject(error);
-      resolve(`${filename} est supptimé`);
+      resolve(`${filename} deleted`);
     });
   });
 }

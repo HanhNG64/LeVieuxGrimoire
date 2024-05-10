@@ -30,11 +30,11 @@ module.exports.validateImage = (req, res, next) => {
     const fileExtension = imageFile.originalname.split('.').pop().toLowerCase();
 
     if (!IMG_EXTENSIONS.includes(fileExtension)) {
-      return res.status(400).json({ error: "L'extension du fichier n'est pas valide." });
+      return res.status(400).json({ error: 'The file extension is invalid.' });
     }
 
     if (!MIME_TYPES[imageFile.mimetype]) {
-      return res.status(400).json({ error: "Le type MIME du fichier n'est pas valide." });
+      return res.status(400).json({ error: 'The MIME type of the file is invalid.' });
     }
   }
   next();

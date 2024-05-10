@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   mongoose
     .connect(process.env.MONGO_URI)
-    .then(() => console.log('Connexion a MongoDB réussi !'))
+    .then(() => console.log('Connection to MongoDB successful!'))
     .catch(() => {
-      console.log('Connexion a MongoDB échoué !');
+      console.log('Connection to MongoDB failed!');
     });
 };
 
