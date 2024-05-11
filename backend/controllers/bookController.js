@@ -207,6 +207,10 @@ function isAuthorized(book, userId) {
  * @param {*} filename The file to remove
  */
 function removeFile(filename) {
+  if (!fs.existsSync(filename)) {
+    return;
+  }
+
   return new Promise((resolve, reject) => {
     fs.unlink(`images/${filename}`, (error) => {
       if (error) reject(error);
